@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <circle cx="50" cy="50" r="48" fill="#1e2019"/>
+  <circle cx="50" cy="50" r="45" stroke="#c9b98a" stroke-width="2"/>
+  <g>
+    <g transform="rotate(45 50 50)"><polygon points="50,27 45.5,48 50,50" fill="#efe7d2"/><polygon points="50,27 54.5,48 50,50" fill="#23242c"/></g>
+    <g transform="rotate(135 50 50)"><polygon points="50,27 45.5,48 50,50" fill="#efe7d2"/><polygon points="50,27 54.5,48 50,50" fill="#23242c"/></g>
+    <g transform="rotate(225 50 50)"><polygon points="50,27 45.5,48 50,50" fill="#efe7d2"/><polygon points="50,27 54.5,48 50,50" fill="#23242c"/></g>
+    <g transform="rotate(315 50 50)"><polygon points="50,27 45.5,48 50,50" fill="#efe7d2"/><polygon points="50,27 54.5,48 50,50" fill="#23242c"/></g>
+  </g>
+  <g>
+    <g transform="rotate(0 50 50)"><polygon points="50,12 43,48 50,50" fill="#efe7d2"/><polygon points="50,12 57,48 50,50" fill="#23242c"/></g>
+    <g transform="rotate(90 50 50)"><polygon points="50,12 43,48 50,50" fill="#efe7d2"/><polygon points="50,12 57,48 50,50" fill="#23242c"/></g>
+    <g transform="rotate(180 50 50)"><polygon points="50,12 43,48 50,50" fill="#efe7d2"/><polygon points="50,12 57,48 50,50" fill="#23242c"/></g>
+    <g transform="rotate(270 50 50)"><polygon points="50,12 43,48 50,50" fill="#efe7d2"/><polygon points="50,12 57,48 50,50" fill="#23242c"/></g>
+  </g>
+  <circle cx="50" cy="50" r="3.4" fill="#ef2d3a"/>
+</svg>
