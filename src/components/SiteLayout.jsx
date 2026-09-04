@@ -32,9 +32,6 @@ export default function SiteLayout({ active, children }) {
             </a>
           ))}
         </nav>
-        <a className="lp-join" href="/report">
-          Join Stay <span aria-hidden="true">✦</span>
-        </a>
       </header>
 
       {children}
@@ -56,19 +53,24 @@ export default function SiteLayout({ active, children }) {
           </nav>
 
           <nav className="lp-footer-col">
-            <a href="/report">Reports</a>
+            <a href="/report">Submit a report</a>
             <a href="/admin">Moderators</a>
+            <a href="/privacy">Privacy Policy</a>
           </nav>
 
           <div className="lp-footer-social">
-            <span className="lp-footer-social-title">Follow us</span>
-            <div className="lp-social">
-              {SOCIALS.map((s) => (
-                <a key={s.key} href={s.href} aria-label={s.key} className="lp-social-link">
-                  {s.node}
-                </a>
-              ))}
-            </div>
+            {SOCIALS.length > 0 && (
+              <>
+                <span className="lp-footer-social-title">Follow us</span>
+                <div className="lp-social">
+                  {SOCIALS.map((s) => (
+                    <a key={s.key} href={s.href} aria-label={s.key} className="lp-social-link">
+                      {s.node}
+                    </a>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
         <div className="lp-footer-bottom">

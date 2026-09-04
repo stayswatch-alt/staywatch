@@ -1,7 +1,8 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { supabase } from './supabaseClient';
+import { supabase, isConfigured } from './supabaseClient';
+import { uploadEvidenceFiles, isCloudinaryConfigured } from './cloudinaryUpload';
 import SiteLayout from './components/SiteLayout.jsx';
-import DatePicker from './components/DatePicker.jsx';
+import DatePicker, { todayLocalISO } from './components/DatePicker.jsx';
 
 const ARTISTS = ['Stray Kids', 'Bang Chan', 'Lee Know', 'Changbin', 'Hyunjin', 'Han', 'Felix', 'Seungmin', 'I.N'];
 const REPORT_TYPES = [
@@ -37,7 +38,52 @@ const emptyForm = {
 };
 
 const MAX_FILES = 3;
-const MAX_SIZE_MB = 1;
+const MAX_SIZE_MB = 8;
+const MAX_BYTES = MAX_SIZE_MB * 1024 * 1024;
+
+function compressImage(file) {
+  if (file.size <= MAX_BYTES) return Promise.resolve(file);
+  if (!file.type.startsWith('image/') || file.type === 'image/gif') {
+    return Promise.resolve(file);
+  }
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement('canvas');
+      let { width, height } = img;
+      const maxDim = 1920;
+      if (width > maxDim || height > maxDim) {
+        const scale = maxDim / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+      const tryQuality = (q) => {
+        canvas.toBlob((blob) => {
+          if (!blob) { resolve(file); return; }
+          if (blob.size > MAX_BYTES && q > 0.45) {
+            tryQuality(q - 0.15);
+            return;
+          }
+          const name = file.name.replace(/\.[^.]+$/, '.jpg');
+          resolve(new File([blob], name, { type: 'image/jpeg' }));
+        }, 'image/jpeg', q);
+      };
+      tryQuality(0.82);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(file);
+    };
+    img.src = url;
+  });
+}
 
 export default function PublicForm() {
   const [form, setForm] = useState(emptyForm);
@@ -49,15 +95,26 @@ export default function PublicForm() {
 
   const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
 
-  const handleSlotChange = (idx, e) => {
-    const file = e.target.files?.[0] || null;
-    if (file && file.size > MAX_SIZE_MB * 1024 * 1024) {
+  const handleSlotChange = async (idx, e) => {
+    const raw = e.target.files?.[0] || null;
+    if (!raw) return;
+
+    let file = raw;
+    try {
+      file = await compressImage(raw);
+    } catch {
+      file = raw;
+    }
+
+    if (file.size > MAX_BYTES) {
       setStatus('error');
-      setErrorMsg(`"${file.name}" exceeds ${MAX_SIZE_MB} MB.`);
+      setErrorMsg(`"${raw.name}" is too large. Please use a screenshot under ${MAX_SIZE_MB} MB (JPG or PNG).`);
       e.target.value = '';
       return;
     }
+
     setStatus(null);
+    setErrorMsg('');
     setFiles((prev) => { const next = [...prev]; next[idx] = file; return next; });
   };
 
@@ -66,18 +123,7 @@ export default function PublicForm() {
     if (slotRefs[idx].current) slotRefs[idx].current.value = '';
   };
 
-  const uploadScreenshots = async () => {
-    const urls = [];
-    for (const file of files.filter(Boolean)) {
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const path = `${Date.now()}-${Math.random().toString(36).slice(2)}-${safeName}`;
-      const { error: uploadError } = await supabase.storage.from('screenshots').upload(path, file);
-      if (uploadError) throw new Error(`Failed to upload "${file.name}".`);
-      const { data } = supabase.storage.from('screenshots').getPublicUrl(path);
-      urls.push(data.publicUrl);
-    }
-    return urls;
-  };
+  const uploadScreenshots = () => uploadEvidenceFiles(files);
 
   const handleSubmit = async () => {
     if (!form.quote.trim()) {
@@ -99,13 +145,32 @@ export default function PublicForm() {
     setSubmitting(true);
     setStatus(null);
 
+    if (!isConfigured) {
+      setSubmitting(false);
+      setStatus('error');
+      setErrorMsg('The site is not connected to the database yet. Please try again later.');
+      return;
+    }
+
+    if (!isCloudinaryConfigured) {
+      setSubmitting(false);
+      setStatus('error');
+      setErrorMsg('Image upload is temporarily unavailable. Please try again later.');
+      return;
+    }
+
     let screenshotUrls = [];
     try {
       screenshotUrls = await uploadScreenshots();
     } catch (uploadErr) {
       setSubmitting(false);
       setStatus('error');
-      setErrorMsg(uploadErr.message || 'Failed to upload screenshots.');
+      const msg = uploadErr?.message || '';
+      setErrorMsg(
+        msg.includes('fetch') || msg.includes('Failed to fetch')
+          ? 'Could not upload the file. Check your connection and try again.'
+          : (msg || 'Failed to upload screenshots.')
+      );
       return;
     }
 
@@ -128,7 +193,12 @@ export default function PublicForm() {
 
     if (error) {
       setStatus('error');
-      setErrorMsg('Submission failed. Please try again in a moment.');
+      const msg = error.message || '';
+      setErrorMsg(
+        msg.includes('fetch') || msg.includes('Failed to fetch')
+          ? 'Could not reach the server. Check your connection and try again.'
+          : 'Submission failed. Please try again in a moment.'
+      );
       return;
     }
 
@@ -204,7 +274,7 @@ export default function PublicForm() {
               <div className="rp-col rp-col-sm">
                 <label className="rp-label" htmlFor="postDate">Posting Date</label>
                 <DatePicker id="postDate" value={form.post_date}
-                  max={new Date().toISOString().split('T')[0]}
+                  max={todayLocalISO()}
                   onChange={set('post_date')} />
               </div>
             </div>
@@ -250,10 +320,9 @@ export default function PublicForm() {
 
             <div className="rp-slots">
               {files.map((file, idx) => (
-                <div
+                <label
                   key={idx}
                   className={`rp-slot ${file ? 'has-file' : ''}`}
-                  onClick={() => !file && slotRefs[idx].current?.click()}
                 >
                   {file ? (
                     <>
@@ -266,7 +335,7 @@ export default function PublicForm() {
                       </div>
                       <p className="rp-slot-name">{file.name}</p>
                       <p className="rp-slot-size">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                      <button className="rp-slot-remove" onClick={(e) => { e.stopPropagation(); removeSlot(idx); }} aria-label="Remove file">×</button>
+                      <button type="button" className="rp-slot-remove" onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeSlot(idx); }} aria-label="Remove file">×</button>
                     </>
                   ) : (
                     <>
@@ -281,13 +350,17 @@ export default function PublicForm() {
                       <p className="rp-slot-size">0 MB</p>
                     </>
                   )}
-                  <input ref={slotRefs[idx]} type="file" className="rp-file-hidden"
-                    accept="image/*"
-                    onChange={(e) => handleSlotChange(idx, e)} />
-                </div>
+                  <input
+                    ref={slotRefs[idx]}
+                    type="file"
+                    className="rp-file-input"
+                    accept="image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif,image/*"
+                    onChange={(e) => handleSlotChange(idx, e)}
+                  />
+                </label>
               ))}
             </div>
-            <p className="rp-hint" style={{ marginTop: '10px' }}>JPG · PNG · GIF · WEBP · max {MAX_SIZE_MB} MB each</p>
+            <p className="rp-hint" style={{ marginTop: '10px' }}>JPG · PNG · WEBP · GIF · max {MAX_SIZE_MB} MB each. Large photos are compressed automatically.</p>
 
             <label className="rp-label" htmlFor="tweetUrl" style={{ marginTop: '18px' }}>
               Post URL <span className="rp-required">required</span>
@@ -301,7 +374,7 @@ export default function PublicForm() {
               <div className="rp-col rp-col-sm">
                 <label className="rp-label" htmlFor="screenshotDate">Screenshot Date</label>
                 <DatePicker id="screenshotDate" value={form.screenshot_date}
-                  max={new Date().toISOString().split('T')[0]}
+                  max={todayLocalISO()}
                   onChange={set('screenshot_date')} />
               </div>
             </div>

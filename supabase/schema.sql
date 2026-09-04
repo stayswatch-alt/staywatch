@@ -1,5 +1,13 @@
 -- Run this in Supabase Dashboard -> SQL Editor
 --
+-- FRESH INSTALL: run these files in order:
+--   1. schema.sql
+--   2. migration_v2.sql
+--   3. migration_v3.sql
+--   4. migration_v4.sql
+--
+-- EXISTING DATABASE: run only migrations you haven't applied yet (v2 → v3 → v4).
+--
 -- MIGRATION NOTE: if you already have an "incidents" table from a previous
 -- version, run these first:
 -- alter table incidents add column if not exists artist text not null default 'Group';
@@ -15,7 +23,7 @@ create table if not exists incidents (
   report_type text not null,
   title text,
   quote text not null,
-  platform text not null default 'X(Twitter)',
+  platform text not null default 'X (Twitter)',
   post_author text,
   post_date date,
   screenshot_date date,

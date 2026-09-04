@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from './supabaseClient';
 import LandingPage from './LandingPage';
 import PublicForm from './PublicForm';
+import PrivacyPage from './PrivacyPage';
 import Login from './Login';
 import AdminPanel from './AdminPanel';
 
@@ -10,6 +11,12 @@ export default function App() {
   const path = window.location.pathname;
   const isAdminPath = path.startsWith('/admin');
   const isReportPath = path.startsWith('/report');
+  const isPrivacyPath = path.startsWith('/privacy');
+
+  useEffect(() => {
+    if (isAdminPath) document.body.classList.add('is-admin');
+    return () => document.body.classList.remove('is-admin');
+  }, [isAdminPath]);
 
   useEffect(() => {
     if (!isAdminPath) return;
@@ -25,15 +32,9 @@ export default function App() {
     return () => listener.subscription.unsubscribe();
   }, [isAdminPath]);
 
-  // Public landing page
-  if (!isAdminPath && !isReportPath) {
-    return <LandingPage />;
-  }
-
-  // Public report form
-  if (isReportPath) {
-    return <PublicForm />;
-  }
+  if (isReportPath) return <PublicForm />;
+  if (isPrivacyPath) return <PrivacyPage />;
+  if (!isAdminPath) return <LandingPage />;
 
   // Admin area
   if (session === undefined) {

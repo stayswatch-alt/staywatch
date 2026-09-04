@@ -14,6 +14,11 @@ function toValue(year, month, day) {
   return `${year}-${String(month + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
 }
 
+export function todayLocalISO() {
+  const d = new Date();
+  return toValue(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
 function daysInMonth(year, month) {
   return new Date(year, month + 1, 0).getDate();
 }

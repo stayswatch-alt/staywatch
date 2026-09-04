@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from './supabaseClient';
+import CompassLogo from './components/CompassLogo.jsx';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -22,13 +23,13 @@ export default function Login() {
     <div className="wrap" style={{ maxWidth: 420 }}>
       <header>
         <div className="brand-row">
-          <div className="star-mark" />
+          <CompassLogo size={40} className="login-brand-mark" />
           <div>
             <div className="eyebrow">Stay // Moderator Access</div>
             <h1>Stay Watch</h1>
           </div>
         </div>
-        <div className="source-line">Вход только для модераторов</div>
+        <div className="source-line">Moderator access only</div>
       </header>
 
       <div className="panel">
@@ -41,7 +42,7 @@ export default function Login() {
           onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
         />
 
-        <label htmlFor="password">Пароль</label>
+        <label htmlFor="password">Password</label>
         <input
           id="password"
           type="password"
@@ -53,12 +54,12 @@ export default function Login() {
         {errorMsg && <div className="error-banner" style={{ marginTop: 14 }}>{errorMsg}</div>}
 
         <button onClick={handleLogin} disabled={loading}>
-          {loading ? 'Вход…' : 'Войти'}
+          {loading ? 'Signing in…' : 'Sign in'}
         </button>
       </div>
 
       <div className="footer-link">
-        <a href="/">← Вернуться к форме репорта</a>
+        <a href="/">← Back to report form</a>
       </div>
     </div>
   );

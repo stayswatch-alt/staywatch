@@ -3,3 +3,6 @@ dist
 .env.local
 .env
 .DS_Store
+
+.vercel
+vite.config.js.timestamp-*.mjs

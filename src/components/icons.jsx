@@ -31,5 +31,5 @@ export function IconChat() {
 }
 
 export const SOCIALS = [
-  { key: 'x', node: <IconTwitter />, href: '#' },
-];
+  // Add real profile URLs when ready, e.g. { key: 'x', node: <IconTwitter />, href: 'https://x.com/...' },
+].filter((s) => s.href && s.href !== '#');
